@@ -1,0 +1,235 @@
+%%simplex%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%cost of variable in objective function
+Cos = [-1 3 -3];
+%% constrinat rhs
+B = [7 6 10]';
+%% intial cofficent of variable in constraint
+Cof =[ 3 -1 1
+    -1 2 0 
+    -4 3 8];
+%% initial BV identity matrix
+S = eye(size(Cof,1));
+
+%%whole table
+A=[Cof , S , B];
+
+C = zeros(1,size(A,2));
+
+Nov = 3;
+
+%cost of all variables 
+C(1:Nov) = Cos;
+
+%initiall BV
+BV = Nov+1:1:size(A,2)-1;
+
+
+while true
+
+%zj-cj
+zjcj = C(BV)*A - C;
+
+%printing the table
+BV
+table = array2table([A;zjcj]);
+table.Properties.VariableNames(1:size(A,2))={'x1','x2','x3','s1','s2','s3','z'}
+
+%checking if optimal table or not 
+if any(zjcj<0)
+    disp('=====doing next iteration===== \n')
+
+    %finding entering by min of zjcj
+    [ent,e_index] = min(zjcj);
+    
+    %finding leaving by min of division 
+    sol = A(:,size(A,2));
+    col = A(:,e_index);
+    
+    
+    for i=1:size(col,1)
+        if col(i)>0
+            ratio(i) = sol(i)./col(i);
+        else
+            ratio(i) = inf;
+        end
+    end
+    [leav,l_index] = min(ratio);
+else
+    disp('optimal solution achieved')
+    return
+
+end
+
+ %making the new table
+
+     %%mkaing the bv variables
+     BV(l_index) = e_index;
+    
+      k = A(l_index ,:) / A(e_index , l_index);
+       
+      for i=1 : size(A,1)
+          if i~= l_index
+              A(i,:) = A(i,:)-A(i,e_index)*k;
+              if A(i,size(A,2))<0
+                  A(i,:) = -A(i,:);
+              end
+          else 
+              A(i,:) = k;
+          end
+      end
+
+
+end
+
+
+
+%%bigm%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%minimization
+
+M= 1000;
+Cons = [3  1  0   1  0  0   
+        4  3 -1   0  1  0    
+        1  2  0   0  0  1];
+
+
+C = [-2 -1 0 -M -M 0 0];
+
+B = [3 6 3];
+
+A = [Cons , B'];
+
+BV = [4,5,6];
+
+
+while true
+%loop here
+zjcj = C(BV)*A-C ;
+
+BV 
+table = array2table([A ; zjcj]);
+table.Properties.VariableNames(1:size(A,2)) = {'x1','x2','x3','x4','x5','x6','sol'}
+
+%just for zjcj 
+t=zjcj(:,1:end-1);
+
+if any(t<0)
+     disp('=================doing next iteration===================');
+    
+     %entering
+     [ent , e_index] = min(t);
+
+     %leaving
+     ratio = zeros(1,size(Cons,1));
+     for i=1:size(A,1)
+         if A(i,e_index) > 0
+             ratio(i) = A(i,size(A,2))./A(i,e_index);
+         else
+             ratio(i) = inf;
+         end
+     end
+
+     [lea,l_index]=min(ratio);
+
+     %finding next table 
+     BV(l_index) = e_index;
+
+     k = A(l_index,:)./A(e_index,l_index);
+     for i=1:size(A,1)
+           if i~= l_index
+               A(i,:) = A(i,:) - k.*A(i,e_index);
+                if A(i,size(A,2))<0
+                    A(i,:) = -A(i,:);
+                end
+           else
+               A(i,:) = k;
+           end
+     end
+
+else
+    disp('optimal table achieved');
+    return
+end
+
+end
+
+%%least cost %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+cost = [11 20 7  8 
+        21 16 10 12
+        8  12 18 9];
+
+s_rows = [50 40 70];
+s_cols = [30 25  35 40];
+
+%checking if balanced and if not makeing it
+
+if sum(s_rows) == sum(s_cols)
+    disp('balanced transportation problem');
+
+else
+    disp('unbaanced transportation problem');
+    if sum(s_rows)<sum(s_cols)
+        cost(end+1,:) = zeros(1,size(cost,2));
+        s_rows(end+1) = sum(s_cols) - sum(s_rows) ; 
+    
+    else
+        cost(:,end+1) = zeros(1,size(cost,1)); 
+        s_cols(end+1) = sum(s_rows) - sum(s_cols); 
+    end
+end
+
+
+%assigning the value to new assignment matrix  X
+X = zeros(size(cost));
+
+while true
+
+if all(s_cols == 0 ) 
+    disp('everything assigned')
+    table = array2table(X);
+    table.Properties.VariableNames(1:size(X,2))={'d1' , 'd2', 'd3' ,'d4' , 'dummy'}
+    return
+
+else
+    disp('===============doing iteration=================')
+s_cols(end+1) = sum(s_cols);
+t= [cost s_rows' ; s_cols];
+
+
+
+%now doing assignment 
+
+%first we are finding the min out all , then finding the position where
+%this coat value lies in table 
+
+%min cost 
+[min_row,min_col] = find(min(cost(:)) == cost);
+
+[min_row min_col];
+
+%find the max allocation
+[allo , index] = max(min(s_rows(min_row) , s_cols(min_col)));
+
+%getting the possition of the max allocation
+ii = min_row(index);
+jj = min_col(index);
+
+
+%allocating to the
+X(ii,jj) = allo;
+s_rows(ii) = s_rows(ii) - allo;
+s_cols(jj) = s_cols(jj) - allo;
+
+if s_rows(ii) == 0
+    cost(ii ,:) = inf;
+end
+if s_cols(jj) ==0
+   cost(:,jj) = inf;
+end
+s_cols = s_cols(1:end-1);
+end
+end
+
+

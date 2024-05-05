@@ -233,3 +233,50 @@ end
 end
 
 
+%%%%%%%%%%%%%%%steppest decent %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%symbolic notation 
+syms X1 X2;
+
+%define function 
+f1 = x1 - x2 + 2*x1^2 + 2*x1*x2 + x2^2;
+fx = inline(f1);
+fxx = @(X) fx(X(:,1) ,X(:,2));
+
+%gradient 
+g1 = gradient(f1);
+gx = inline(g1);
+gxx = @(X) gx(X(:,1),X(:,2));
+
+%hasian 
+h1 = hessian(f1);
+hx = inline(h1);
+
+%define initial variables
+X0 = [1,1];
+tol = 10^-3;
+maxit = 4;
+it = 0;
+
+%storing values of X 
+X=[];
+while norm(gxx(X0)) > tol && it < maxit
+    X = [X ; X0];
+    
+% calculating gradient 
+    S = -gxx(X0);
+    H = hx(X0);
+    
+% calculating step size
+    lambda = S'*S/(S'*H*S);
+    Xnew = X0 + lambda*S';
+
+%setting to previous value
+    X0 = Xnew;
+    it = it+1;
+end
+
+%printing the solution 
+fprintf('optimal sol x = [%f , %f ] \n' , X0(1) , X0(2));
+fprintf('optimal sol  = [%f]',fxx(X0));
